@@ -5,7 +5,7 @@ import tkinter.filedialog
 import tempfile
 import xml.dom.minidom
 import xml.etree.ElementTree as ET
-from tkinter.constants import ANCHOR, BOTTOM, DISABLED, E, END, LEFT, N, NO, RIGHT, S, W, X, Y
+from tkinter.constants import ANCHOR, BOTTOM, DISABLED, E, END, LEFT, N, NO, RIGHT, S, W, X, Y, CENTER
 from tkinter.scrolledtext import *
 from tkinter.filedialog import asksaveasfile
 from lxml import etree
@@ -197,7 +197,32 @@ class TextboxLineNumbers(tkinter.Frame):
 
                 # move to the next character
                 j += 1
-                        
+
+    def search(self,word):
+        # Remove any previous highlighting
+        self.text.tag_remove("search", "1.0", tkinter.END)
+
+        # Find all occurrences of the word and apply the "search" tag
+        start_pos = "1.0"
+        while True:
+            start_pos = self.text.search(word, start_pos, tkinter.END)
+            if not start_pos:
+                break
+            end_pos = f"{start_pos}+{len(word)}c"
+            self.text.tag_add("search", start_pos, end_pos)
+            start_pos = end_pos
+
+        # Apply highlighting to all text with the "search" tag
+        self.text.tag_config("search", background="yellow")
+
+        # Select the first occurrence of the search word and move the cursor to the beginning of the selection
+        first_occurrence = self.text.search(word, "1.0", stopindex=tkinter.END)
+        if first_occurrence:
+            self.text.see(first_occurrence)
+            end_pos = f"{first_occurrence}+{len(word)}c"
+            self.text.tag_add("sel", first_occurrence, end_pos)
+            self.text.mark_set("insert", first_occurrence)
+
     def validate_XSD(self):
         # in order to validate in session we need to call a file path, 
         # to do this save the file to a temp location with a temp name and 
@@ -292,7 +317,6 @@ class TextboxLineNumbers(tkinter.Frame):
 
     def make_pretty(self): 
         try:
-            # clean the text widget before loading the next file
             tempfile = xml.dom.minidom.parseString(self.text.get(1.0, END))
             xmlstring = tempfile.toprettyxml(newl='\r\n')
             content = xmlstring
@@ -358,7 +382,7 @@ def insertToMsgBox(msg):
 editwindow = tkinter.Tk()
 editwindow.title("XMLDoctor")
 editwindow.resizable(width=True, height=True)
-editwindow.geometry("800x800")
+editwindow.geometry("900x800")
 
 # XML Editor Text Frame
 editor_frame = tkinter.Frame(editwindow)
@@ -367,6 +391,17 @@ editor_frame.pack(pady=5)
 # XML Editor Text Window
 editor_text = TextboxLineNumbers(editor_frame)
 editor_text.pack()
+
+# Search and Replace frame
+SearchReplace_frame = tkinter.Frame(editwindow)
+SearchReplace_frame.pack(anchor=CENTER,ipadx=5, ipady= 5)
+
+# Create an entry widget for the search word
+search_entry = tkinter.Entry(SearchReplace_frame)
+search_entry.pack(fill=X,side=LEFT)
+
+search_button = tkinter.Button(SearchReplace_frame, text="Search", command=lambda: editor_text.search(word = search_entry.get()))
+search_button.pack(fill=X,side=RIGHT)
 
 # Buttons frame
 btn_frame = tkinter.Frame(editwindow)
@@ -412,7 +447,7 @@ openXSD_btn.pack(fill=X,side=RIGHT)
 # Current XSL Status bar
 XSL_status_bar = tkinter.Label(statusxsl_frame,text='No XSL File Selected...', anchor=W, wraplength=10000)
 XSL_status_bar.pack(fill=X,side=LEFT, ipadx=5, ipady= 5)
-openXSL_btn = tkinter.Button(statusxsl_frame, text="Select XSl File",command=set_XSL_path)
+openXSL_btn = tkinter.Button(statusxsl_frame, text="Select XSL File",command=set_XSL_path)
 openXSL_btn.pack(fill=X,side=RIGHT)
 
 # call functions at runtime 
